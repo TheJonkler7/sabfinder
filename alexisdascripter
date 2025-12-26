@@ -1,0 +1,233 @@
+-- Solar Scripts | Fully Working Version
+-- LocalScript
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+--------------------------------------------------
+-- SETTINGS (PERSISTENT)
+--------------------------------------------------
+local settings = {
+	Speed = 16,
+	Jump = 50
+}
+
+--------------------------------------------------
+-- CHARACTER HANDLING (FIXED)
+--------------------------------------------------
+local function applyCharacterSettings()
+	local char = player.Character
+	if not char then return end
+
+	local humanoid = char:WaitForChild("Humanoid", 5)
+	if not humanoid then return end
+
+	humanoid.WalkSpeed = settings.Speed
+	humanoid.JumpPower = settings.Jump
+end
+
+player.CharacterAdded:Connect(function()
+	task.wait(0.2)
+	applyCharacterSettings()
+end)
+
+--------------------------------------------------
+-- GUI SETUP
+--------------------------------------------------
+local gui = Instance.new("ScreenGui")
+gui.Name = "SolarScripts"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local main = Instance.new("Frame")
+main.Size = UDim2.new(0, 520, 0, 400)
+main.Position = UDim2.new(0.5, -260, 0.5, -200)
+main.BackgroundColor3 = Color3.fromRGB(28,28,28)
+main.BorderSizePixel = 0
+main.Parent = gui
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 45)
+title.BackgroundTransparency = 1
+title.Text = "Solar Scripts"
+title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 26
+title.Parent = main
+
+--------------------------------------------------
+-- TABS
+--------------------------------------------------
+local tabsFrame = Instance.new("Frame")
+tabsFrame.Size = UDim2.new(0, 150, 1, -45)
+tabsFrame.Position = UDim2.new(0, 0, 0, 45)
+tabsFrame.BackgroundColor3 = Color3.fromRGB(22,22,22)
+tabsFrame.BorderSizePixel = 0
+tabsFrame.Parent = main
+
+local contentFrame = Instance.new("Frame")
+contentFrame.Size = UDim2.new(1, -150, 1, -45)
+contentFrame.Position = UDim2.new(0, 150, 0, 45)
+contentFrame.BackgroundTransparency = 1
+contentFrame.Parent = main
+
+local tabs = {}
+
+local function createTab(name)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, 0, 0, 42)
+	btn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+	btn.BorderSizePixel = 0
+	btn.Text = name
+	btn.TextColor3 = Color3.new(1,1,1)
+	btn.Font = Enum.Font.Gotham
+	btn.TextSize = 16
+	btn.Parent = tabsFrame
+
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(1, 0, 1, 0)
+	frame.Visible = false
+	frame.Parent = contentFrame
+
+	btn.MouseButton1Click:Connect(function()
+		for _, t in pairs(tabs) do
+			t.Visible = false
+		end
+		frame.Visible = true
+	end)
+
+	table.insert(tabs, frame)
+	if #tabs == 1 then frame.Visible = true end
+
+	return frame
+end
+
+--------------------------------------------------
+-- BUTTON
+--------------------------------------------------
+local function createButton(parent, text, y, callback)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0, 280, 0, 40)
+	btn.Position = UDim2.new(0, 20, 0, y)
+	btn.BackgroundColor3 = Color3.fromRGB(55,55,55)
+	btn.BorderSizePixel = 0
+	btn.Text = text
+	btn.TextColor3 = Color3.new(1,1,1)
+	btn.Font = Enum.Font.Gotham
+	btn.TextSize = 15
+	btn.Parent = parent
+	btn.MouseButton1Click:Connect(callback)
+end
+
+--------------------------------------------------
+-- TABS CONTENT
+--------------------------------------------------
+local playerTab = createTab("Player")
+local funTab = createTab("Fun")
+
+--------------------------------------------------
+-- PLAYER TAB (ALL WORKING)
+--------------------------------------------------
+createButton(playerTab, "Speed x2", 20, function()
+	settings.Speed = 32
+	applyCharacterSettings()
+end)
+
+createButton(playerTab, "Super Jump", 70, function()
+	settings.Jump = 100
+	applyCharacterSettings()
+end)
+
+createButton(playerTab, "Reset Movement", 120, function()
+	settings.Speed = 16
+	settings.Jump = 50
+	applyCharacterSettings()
+end)
+
+createButton(playerTab, "Respawn", 170, function()
+	player:LoadCharacter()
+end)
+
+--------------------------------------------------
+-- FUN TAB
+--------------------------------------------------
+-- FPS
+local fpsLabel = Instance.new("TextLabel")
+fpsLabel.Size = UDim2.new(0, 280, 0, 35)
+fpsLabel.Position = UDim2.new(0, 20, 0, 20)
+fpsLabel.BackgroundTransparency = 1
+fpsLabel.TextColor3 = Color3.new(1,1,1)
+fpsLabel.Font = Enum.Font.Gotham
+fpsLabel.TextSize = 18
+fpsLabel.Text = "FPS: ..."
+fpsLabel.Parent = funTab
+
+do
+	local frames = 0
+	local last = tick()
+	RunService.RenderStepped:Connect(function()
+		frames += 1
+		if tick() - last >= 1 then
+			fpsLabel.Text = "FPS: " .. frames
+			frames = 0
+			last = tick()
+		end
+	end)
+end
+
+-- SERVER LIST (SCROLLABLE)
+local scrolling = Instance.new("ScrollingFrame")
+scrolling.Size = UDim2.new(0, 280, 0, 220)
+scrolling.Position = UDim2.new(0, 20, 0, 70)
+scrolling.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrolling.ScrollBarImageTransparency = 0.2
+scrolling.BackgroundTransparency = 1
+scrolling.Parent = funTab
+
+local function refreshPlayers()
+	scrolling:ClearAllChildren()
+	local y = 0
+
+	for _, plr in ipairs(Players:GetPlayers()) do
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(1, 0, 0, 32)
+		btn.Position = UDim2.new(0, 0, 0, y)
+		btn.BackgroundColor3 = Color3.fromRGB(45,45,45)
+		btn.BorderSizePixel = 0
+		btn.Text = plr.Name
+		btn.TextColor3 = Color3.new(1,1,1)
+		btn.Font = Enum.Font.Gotham
+		btn.TextSize = 14
+		btn.Parent = scrolling
+
+		btn.MouseButton1Click:Connect(function()
+			local url = "https://www.roblox.com/users/" .. plr.UserId .. "/profile"
+			if setclipboard then
+				setclipboard(url)
+			end
+			warn("[Solar Scripts] Profile link:", url)
+		end)
+
+		y += 36
+	end
+
+	scrolling.CanvasSize = UDim2.new(0, 0, 0, y)
+end
+
+Players.PlayerAdded:Connect(refreshPlayers)
+Players.PlayerRemoving:Connect(refreshPlayers)
+refreshPlayers()
+
+--------------------------------------------------
+-- UI TOGGLE
+--------------------------------------------------
+UIS.InputBegan:Connect(function(input, gpe)
+	if gpe then return end
+	if input.KeyCode == Enum.KeyCode.RightShift then
+		main.Visible = not main.Visible
+	end
+end)
